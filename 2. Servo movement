@@ -1,0 +1,50 @@
+#include <IRremote.hpp>
+#include <Servo.h>
+
+// IR pin
+#define IR_RECEIVE_PIN 3
+
+// IR codes from your remote
+#define BTN_UP    0xE718FF00 // Change to your own hex code
+#define BTN_DOWN  0xAD52FF00 // Change to your own hex code
+
+Servo servo1;  // D10
+Servo servo2;  // D11
+
+void setup() {
+  servo1.attach(10);
+  servo2.attach(11);
+
+  // Stop both at start
+  servo1.write(90);
+  servo2.write(90);
+
+  IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK);
+  Serial.begin(9600);
+}
+
+void loop() {
+  if (IrReceiver.decode()) {
+
+    uint32_t code = IrReceiver.decodedIRData.decodedRawData;
+    Serial.print("Received: 0x");
+    Serial.println(code, HEX);
+
+  
+    // UP BUTTON-
+    if (code == BTN_UP) {
+      // Servo1 clockwise, Servo2 anticlockwise
+      servo1.write(0);
+      servo2.write(180);
+    }
+
+    // DOWN BUTTON
+    if (code == BTN_DOWN) {
+      // Reverse both servos (swap directions)
+      servo1.write(180);  // was clockwise, now anticlockwise
+      servo2.write(0);    // was anticlockwise, now clockwise
+    }
+
+    IrReceiver.resume();
+  }
+}
