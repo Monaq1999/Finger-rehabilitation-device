@@ -1,5 +1,5 @@
 IR-Finger Rehabilitation Device:
-The IR-Finger Rehabilitation Device is a low-cost, Arduino-based physiotherapy system designed to assist with finger mobility rehabilitation. 
+The IR-Finger Rehabilitation Device is an Arduino-based physiotherapy system designed to assist with finger mobility rehabilitation. 
 Using an infrared remote, the patient or clinician can trigger precise, programmable movements of two servo-driven finger supports, enabling repeatable motor-control exercises and controlled range-of-motion training.
 The system uses a 38 kHz IR receiver and a DollaTek mini remote to fully control servo rotation patterns, including direction change, incremental movements, and programmable resets.
 
