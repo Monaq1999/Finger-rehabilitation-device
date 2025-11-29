@@ -1,50 +1,102 @@
 #include <IRremote.hpp>
 #include <Servo.h>
 
-// IR pin
+// IR setup
 #define IR_RECEIVE_PIN 3
 
-// IR codes from your remote
-#define BTN_UP    0xE718FF00 // Change to your own hex code
-#define BTN_DOWN  0xAD52FF00 // Change to your own hex code
+// Change to your own hex code - Hex codes from remote
+#define BTN_UP     0xE718FF00
+#define BTN_DOWN   0xAD52FF00
+#define BTN_LEFT   0xF708FF00
+#define BTN_RIGHT  0xA55AFF00
+#define BTN_OK     0xE31CFF00    // reset
 
-Servo servo1;  // D10
-Servo servo2;  // D11
+//Servo setup
+Servo servo1;   // D10
+Servo servo2;   // D11
+
+const int HOME_ANGLE = 90;   // where servos go on reset
+const int FULL_STEP  = 180;  // UP/DOWN step size
+const int HALF_STEP  = 90;   // LEFT/RIGHT step size
+
+// Current positions (in degrees)
+int pos1 = HOME_ANGLE;
+int pos2 = HOME_ANGLE;
+
+// Helper: clamp an angle to valid servo range
+int clampAngle(int angle) {
+  if (angle < 0)   return 0;
+  if (angle > 180) return 180;
+  return angle;
+}
+
+// Applying relative movement in opposite directions between servos
+void moveOpposite(int deltaDeg) {
+  pos1 = clampAngle(pos1 + deltaDeg);     // servo1 “clockwise”
+  pos2 = clampAngle(pos2 - deltaDeg);     // servo2 “anticlockwise”
+
+  servo1.write(pos1);
+  servo2.write(pos2);
+
+  Serial.print("Servo1: ");
+  Serial.print(pos1);
+  Serial.print("  Servo2: ");
+  Serial.println(pos2);
+}
+
+// Reset to home angle
+void resetProgram() {
+  pos1 = HOME_ANGLE;
+  pos2 = HOME_ANGLE;
+  servo1.write(pos1);
+  servo2.write(pos2);
+
+  Serial.println("Program reset: servos moved to HOME_ANGLE");
+}
 
 void setup() {
+  Serial.begin(9600);
+
   servo1.attach(10);
   servo2.attach(11);
 
-  // Stop both at start
-  servo1.write(90);
-  servo2.write(90);
+  resetProgram();  // centre servos at start
 
   IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK);
-  Serial.begin(9600);
 }
 
 void loop() {
   if (IrReceiver.decode()) {
 
     uint32_t code = IrReceiver.decodedIRData.decodedRawData;
-    Serial.print("Received: 0x");
-    Serial.println(code, HEX);
 
-  
-    // UP BUTTON-
-    if (code == BTN_UP) {
-      // Servo1 clockwise, Servo2 anticlockwise
-      servo1.write(0);
-      servo2.write(180);
+    // Ignore repeat code (often 0xFFFFFFFF) - usually sent if buttn held down 
+    if (code != 0xFFFFFFFF) {
+      Serial.print("Received: 0x");
+      Serial.println(code, HEX);
+
+      if (code == BTN_UP) {
+        // Full step forward: 180° total each press
+        moveOpposite(FULL_STEP);
+
+      } else if (code == BTN_DOWN) {
+        // Full step backward: swap direction (–180°)
+        moveOpposite(-FULL_STEP);
+
+      } else if (code == BTN_RIGHT) {
+        // Half-step forward: 90° each press
+        moveOpposite(HALF_STEP);
+
+      } else if (code == BTN_LEFT) {
+        // Half-step backward: –90° each press
+        moveOpposite(-HALF_STEP);
+
+      } else if (code == BTN_OK) {
+        // Reset: go back to HOME_ANGLE
+        resetProgram();
+      }
     }
 
-    // DOWN BUTTON
-    if (code == BTN_DOWN) {
-      // Reverse both servos (swap directions)
-      servo1.write(180);  // was clockwise, now anticlockwise
-      servo2.write(0);    // was anticlockwise, now clockwise
-    }
-
-    IrReceiver.resume();
+    IrReceiver.resume();  // ready for next button
   }
 }
